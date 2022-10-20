@@ -1,6 +1,37 @@
-import { Table,Row,GridCell,Origin } from "./graph.styles";
+import {
+  Table,
+  Row,
+  GridCell,
+  Origin,
+  BaseButton,
+  MathFormula,
+  Enclosure,
+} from "./graph.styles";
+
+import { DisplayScreen } from "./KeyPad/keypad.styles";
+
+import UnitCircle from "./Plots/Trig/AngleConversion/angle_keys.component";
+import UnitCirclDisplay from "./Plots/Trig/AngleConversion/display.component";
+import CircleGraph from "./Plots/Trig/overlay.component";
+import Gaussian from "./Plots/Gaussian/gaus.component";
+import NumberLine from "./NumberLines/nums.component";
+// import UnitCircleDisplay from "./KeyPad/Plots/Trig/unitCircleDisplay.component";
+// import { Theta, ThetaOrigin } from "./KeyPad/Plots/Trig/display.styles";
+
+import {
+  evaluate,
+  parser,
+  parse,
+  derivative,
+  simplify,
+  exp,
+  log
+} from "mathjs";
+ 
+import KeyPad from "./KeyPad/keypad.component";
+import { vNumParams,hNumParams } from "./NumberLines/numlineParams";
+import { MathComponent } from "mathjax-react";
 import { useEffect, useState } from "react";
-import { evaluate,parser,parse,derivative,simplify } from "mathjs";
 var par = parser()
 
 // Vectors
@@ -15,7 +46,7 @@ for (let i = min; i < max; i++) {xVector.push(i)}
 const circleVector = []
 const fragment = 2*Math.PI/max
 var iteration = 0
-for (let i = min; i < max; i++) {
+  for (let i = 0; i < (max*2); i++) {
   iteration += fragment
   circleVector.push(iteration)
 }
@@ -23,24 +54,48 @@ for (let i = min; i < max; i++) {
 export default function Graph() {
 
   const [state, setState] = useState({
+    currentView:null,
     matrix: [],
     polarCoords: [],
     cartCoords:[],
-    polars:false,
-    mathFunc:'cos(3 * x) + sin(2 * x)'
+    polars:false, // Display polars or cartesian
+    mathFunc:'cos(3 * x) + sin(2 * x)',
+    unitCircle:null, // Display Unit Circle ?
+
+    // --- Radian / Degree conversion --- //
+    showDegrees:true,
+    degrees:45, // Converting between degrees and radians
+    radians:.79, // Converting between degrees and radians
+
+    displayInput:true // Toggles main input on/off 
   });
-  const { matrix, polars, cartCoords, polarCoords, mathFunc } = state;
+  const {
+    matrix,
+    polars,
+    cartCoords,
+    polarCoords,
+    mathFunc,
+    currentView,
+    displayInput,
+  } = state;
 
   useEffect(() => {boardFactory()},[]);
   
-  const polarVector = async () => {
+  const polarVector = async (mathFunc) => {
     var func = [];
     var coords = [];
 
-    await circleVector.forEach((i) => {
-      par.set('x',i)
-      func.push(par.evaluate(mathFunc))
-    });
+    try {
+
+      await circleVector.forEach((i) => {
+        par.set('x',i)
+        par.set('y',i)
+        par.set('u',i)
+        func.push(par.evaluate(mathFunc))
+      });
+
+    } catch (err) {linearVector('cos(3 * x) + sin(2 * x)')}
+
     
     await func.forEach((el, x) => {
       coords.push([el * Math.cos(circleVector[x]), el * Math.sin(circleVector[x])]);
@@ -53,15 +108,22 @@ export default function Graph() {
   };
 
   // ---- Linear ---- //
-  const linearVector = async () => {
+  const linearVector = async (mathFunc) => {
+    // console.log('hit linear vector')
     var func = []
     var coords =[]
 
-    await xVector.forEach((i) => {
-      i = i / 100
-      par.set('x',i)
-      func.push(par.evaluate(mathFunc))
-    });
+    try {
+
+      await xVector.forEach((i) => {
+        i = i / 100
+        par.set('x',i)
+        par.set('y',i)
+        par.set('u',i)
+        func.push(par.evaluate(mathFunc))
+      });
+
+    } catch (err) {linearVector('cos(3 * x) + sin(2 * x)')}
     
     await func.forEach((el,x) => {
       x = x / 100
@@ -115,30 +177,90 @@ export default function Graph() {
 
   const inputHandler = (e) => {
     e.preventDefault()
-
     const {name,value} = e.target
-
     setState({...state,[name]:value})
   }
 
+  const formatFunction = (string) => {
+    return(string.replace(/ /g, "").replace(/\*/g, ''))
+  }
+
+  const execute = async (e,prop,val) => {
+    e.preventDefault()
+    await setState({...state,[prop]:val})
+  }
+
   return (
-    <div className="App">
+    <Enclosure>
+
       <Table className="Table">
         <Row>
+          
           <Origin polars={polars}>
+
             {vectorMap(returnPlots())}
+            {currentView === 'unit_circle' ?
+            <UnitCirclDisplay
+              vectorMap={vectorMap}
+              formatFunction={formatFunction}
+              linearVector={linearVector}
+              polarVector={polarVector}
+              execute={execute}
+              state={state}
+            />
+            :null}
+
+            {polars && <CircleGraph />}
+
           </Origin>
-          {mappedTiles}
-          <input
-            type='text'
-            onChange={inputHandler}
-            placeholder={mathFunc}
-            name="mathFunc"
-          />
-          <button style={{left:'0px'}} onClick={linearVector}>Cartesian</button>
-          <button style={{right:'0px'}} onClick={polarVector}>Polar</button>
+          
+          <MathFormula>
+            <MathComponent tex={String.raw`${mathFunc.replace(/ /g, "").replace(/\*/g, '')}`} />
+          </MathFormula>
+          
+          {!polars && mappedTiles}
+          <NumberLine parameters={hNumParams} />
+          <NumberLine parameters={vNumParams} />
+          
         </Row>
       </Table>
-    </div>
+
+      {displayInput && <DisplayScreen
+        type='text'
+        onChange={inputHandler}
+        value={mathFunc}
+        name="mathFunc"
+      />}
+
+      {!currentView && <KeyPad
+        formatFunction={formatFunction}
+        linearVector={linearVector}
+        polarVector={polarVector}
+        execute={execute}
+        state={state}
+      />}
+
+      {currentView === 'gaus' ? <Gaussian
+        state={state}
+        setState={setState}
+        formatFunction={formatFunction}
+        linearVector={linearVector}
+        execute={execute}
+        inputHandler={inputHandler}
+      />:null}
+
+      {currentView === 'unit_circle' ? 
+      <UnitCircle
+        state={state}
+        setState={setState}
+        formatFunction={formatFunction}
+        linearVector={linearVector}
+        polarVector={polarVector}
+        execute={execute}
+        inputHandler={inputHandler}
+      />
+      :null}
+
+    </Enclosure>
   );
-}
+};

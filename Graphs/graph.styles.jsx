@@ -1,43 +1,43 @@
 import styled from "styled-components";
 
-export const Table = styled.main`
+export const Enclosure = styled.main`
+position:absolute;
+    height:785px;
+    width:495px;
+    padding:10px;
+    border-radius:10px;
+    box-shadow: 0px 5px 20px -7px #000000;
+    display:flex;
+    flex-direction:column;
+
+    @media (max-width:620px) {
+        transform: scale(0.70);
+        left:-24%;
+        top:-21%;
+    }
+
+    @media (max-width:400px) {
+        transform: scale(0.50);
+        left:-36%;
+        top:-28%;
+    }
+`
+
+export const Table = styled.div`
     position: absolute;
+    opacity:.5;
     height: 500px;
     width: 500px;
-    margin:auto;
     background-color: rgb(240, 240, 240);
     display: flex;
     flex-direction: column;
-    /* flex-wrap: wrap; */
     justify-content: center;
     align-items: flex-start;
     align-content: stretch;
-    box-shadow: 0px 5px 20px -7px #000000;
+    border: 2px solid rgba(0, 0, 0, 0.5);
     z-index: 0;
-
-    button {
-        position:absolute;
-        bottom:-200px;
-        height:100px;
-        width:150px;
-        font-size:20px;
-    }
-
-    input {
-        position:absolute;
-        bottom:-80px;
-        height:60px;
-        // width:400px;
-        width:100%;
-        box-shadow: 0px 5px 20px -7px #000000;
-        font-size:40px;
-    }
-
-    @media (max-width:620px) {
-            transform: scale(0.70);
-            left:-21%;
-            top:-21%;
-        }
+    overflow:hidden;
+    left:5px;
 `
 
 export const Row = styled.section`
@@ -51,10 +51,13 @@ export const Row = styled.section`
 `
 
 export const Origin = styled.span`
+    height:1px;
+    width:1px;
+    background-color:green;
     position: absolute;
     left: ${({polars}) => (!polars ? `125px` : `250px`)};
-    bottom:233px;
     transition: all 1000ms;
+    bottom:235px;
 `
 
 export const GridCell = styled.span`
@@ -62,5 +65,12 @@ export const GridCell = styled.span`
     width: 48px;
     position: relative;
     margin: 0px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.5);
+`
+
+export const MathFormula = styled.div`
+    position:absolute;
+    top:0px;
+    right:40px;
+    font-size:20px;
 `
